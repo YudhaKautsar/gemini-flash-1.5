@@ -79,3 +79,26 @@ app.post('/generate-from-document', upload.single('document'), async (req, res) 
     }
 
 });
+
+app.post('/generate-from-audio', upload.single('audio'), async(req, res) => {
+    const audioBuffer = fs.readFileSync(req.file.path);
+    const base64Audio = audioBuffer.toString('base64');
+    const audioPart = {
+        inlineData: {
+            data: base64Audio,
+            mimeType: req.file.mimetype
+        }
+    };
+
+    try {
+        const result = await model.generateContent([
+            'Transcribe or analyze the following audio:', audioPart
+        ]);
+        const response = await result.response;
+        res.json({ output: response.text() });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    } finally {
+        fs.unlinkSync(filePath);
+    }
+});
